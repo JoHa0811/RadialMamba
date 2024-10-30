@@ -84,6 +84,7 @@ class CMRxReconDataset(Dataset):
         return fourier_op
         
     def __len__(self):
+        #return int(sum(self.slcs_dnmcs[:,0] * self.slcs_dnmcs[:,1]))
         return self.slcs_dnmcs.shape[0]
 
     def __getitem__(self, idx):
@@ -111,9 +112,7 @@ class CMRxReconDataset(Dataset):
         if slc_index > k_data.shape[0]:
             data_slice_index = slc_index // k_data.shape[0]
             data_dynamics_index = slc_index - data_slice_index
-            
-        
-        #ToDo: indexing!
+
         coilwise = torch.fft.ifft2(k_data[data_slice_index,:,data_dynamics_index,...])
             
         fourier_op = self._create_fourier_operator(x_dim=coilwise.shape[-1],
@@ -122,11 +121,18 @@ class CMRxReconDataset(Dataset):
         (us_rad_image_data,) = fourier_op.H(us_rad_kdata)
         
         
-        return us_rad_kdata, us_rad_image_data
+        return (us_rad_kdata,)#, us_rad_image_data
     
 #%%
 #def main():
-dataloader = CMRxReconDataset()
-data, image_data = dataloader[34]
+dataset = CMRxReconDataset()
+(data,) = dataset[34]
 #k_data = dataloader._load_data()
+# %%
+dataloader = DataLoader(dataset, batch_size=2,
+                        shuffle=True, num_workers=0)
+# %%
+for i_batch, sample_batched in enumerate(dataloader):
+    print(i_batch, sample_batched[0].shape)
+    
 # %%
