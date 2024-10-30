@@ -120,7 +120,8 @@ class CMRxReconDataset(Dataset):
                                                    y_dim=coilwise.shape[-2])
         (us_rad_kdata,) = fourier_op.forward(coilwise.unsqueeze(0).unsqueeze(2))
         (us_rad_image_data,) = fourier_op.H(us_rad_kdata)
-        us_rad_kdata = rearrange(us_rad_kdata.squeeze(0).squeeze(1), "c s k0 -> s c k0")
+        us_rad_kdata = torch.view_as_real(us_rad_kdata)
+        us_rad_kdata = rearrange(us_rad_kdata.squeeze(0).squeeze(1), "c s k0 r -> s (c r) k0")
         
         
         return us_rad_kdata#, us_rad_image_data
