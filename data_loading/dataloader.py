@@ -25,6 +25,7 @@ from mrpro.operators.FourierOp import FourierOp
 from mrpro.data import SpatialDimension
 from mrpro.data import KData
 from mrpro.data import KTrajectory
+from einops import rearrange
 import h5py
 
 # Ignore warnings
@@ -119,20 +120,22 @@ class CMRxReconDataset(Dataset):
                                                    y_dim=coilwise.shape[-2])
         (us_rad_kdata,) = fourier_op.forward(coilwise.unsqueeze(0).unsqueeze(2))
         (us_rad_image_data,) = fourier_op.H(us_rad_kdata)
+        us_rad_kdata = rearrange(us_rad_kdata.squeeze(0).squeeze(1), "c s k0 -> s c k0")
         
         
-        return (us_rad_kdata,)#, us_rad_image_data
+        return us_rad_kdata#, us_rad_image_data
     
 #%%
 #def main():
 dataset = CMRxReconDataset()
-(data,) = dataset[34]
+data = dataset[34]
 #k_data = dataloader._load_data()
 # %%
-dataloader = DataLoader(dataset, batch_size=2,
-                        shuffle=True, num_workers=0)
+dataloader = DataLoader(dataset, batch_size=4,
+                        shuffle=True, num_workers=0,
+                        collate_fn=lambda sampled: torch.concat(sampled, dim=0))
 # %%
 for i_batch, sample_batched in enumerate(dataloader):
-    print(i_batch, sample_batched[0].shape)
+    print(i_batch, sample_batched.shape)
     
 # %%
