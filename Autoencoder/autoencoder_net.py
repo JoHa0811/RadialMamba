@@ -71,40 +71,37 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.deconv1(x))
-        print(x.shape)
         x = self.upsample1(x)
         x = F.relu(self.deconv2(x))
-        print(x.shape)
         x = self.upsample2(x)
         x = F.relu(self.deconv3(x))
-        print(x.shape)
         x = self.deconv4(x)
         return x
     
     
-#%%
-# check dimensions
-import sys
-sys.path.append('/echo/hammac01/RadialMamba/data_loading')
-from dataloader import CMRxReconDataset
-dataset = CMRxReconDataset()
-data = dataset[34]
-# %%
-encoder = Encoder(image_size=data.shape[2], channels=data.shape[1], embedding_dim=16)
-x_out = encoder(data)
-#%%
-decoder = Decoder()
-x_out_rearrange = rearrange(x_out, "s c k0 -> c s k0")
-decoded_x = decoder(x_out)
+# #%%
+# # check dimensions
+# import sys
+# sys.path.append('/echo/hammac01/RadialMamba/data_loading')
+# from dataloader import CMRxReconDataset
+# dataset = CMRxReconDataset()
+# data = dataset[34]
+# # %%
+# encoder = Encoder(image_size=data.shape[2], channels=data.shape[1], embedding_dim=16)
+# x_out = encoder(data)
+# #%%
+# decoder = Decoder()
+# x_out_rearrange = rearrange(x_out, "s c k0 -> c s k0")
+# decoded_x = decoder(x_out)
 
-#%%
-decoded_x = rearrange(decoded_x, "b (c r) k0 -> b c k0 r", c=10, r=2).contiguous()
-decoded_x = torch.view_as_complex(decoded_x)
-#%%
-#us_rad_kdata.shape
-#torch.Size([1, 10, 1, 64, 256])
-decoded_x_rearranged = rearrange(decoded_x.unsqueeze(0).unsqueeze(2), "d b i c k0 -> d c i b k0")
-(us_rad_image_data,) = dataset.fourier_op.H(decoded_x_rearranged)
-# %%
-plt.matshow(us_rad_image_data.abs().detach().numpy()[0,0,0,...])
+# #%%
+# decoded_x = rearrange(decoded_x, "b (c r) k0 -> b c k0 r", c=10, r=2).contiguous()
+# decoded_x = torch.view_as_complex(decoded_x)
+# #%%
+# #us_rad_kdata.shape
+# #torch.Size([1, 10, 1, 64, 256])
+# decoded_x_rearranged = rearrange(decoded_x.unsqueeze(0).unsqueeze(2), "d b i c k0 -> d c i b k0")
+# (us_rad_image_data,) = dataset.fourier_op.H(decoded_x_rearranged)
+# # %%
+# plt.matshow(us_rad_image_data.abs().detach().numpy()[0,0,0,...])
 # %%

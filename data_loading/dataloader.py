@@ -54,11 +54,13 @@ class CMRxReconDataset(Dataset):
         counter = 0
         for file in h5_files:
             f = h5py.File(file, "r")
-            k_data = torch.tensor(f["kspace"])
-            slcs_dnmcs[h5_files.index(file)] = torch.tensor([k_data.shape[0], k_data.shape[2]])
+            #k_data = torch.tensor(f["kspace"])
+            #slcs_dnmcs[h5_files.index(file)] = torch.tensor([torch.tensor(f["kspace"]).shape[0], torch.tensor(f["kspace"]).shape[2]])
+            slcs_dnmcs[h5_files.index(file)] = torch.tensor([int(str(file).split(".h5")[0].split("_")[-1]), int(str(file).split(".h5")[0].split("_")[-2])])
+
             counter += 1
             print(counter)
-            if counter == 5:
+            if counter == 50:
                 break
         
         slcs_dnmcs = slcs_dnmcs[slcs_dnmcs.sum(dim=1) != 0]
@@ -97,24 +99,33 @@ class CMRxReconDataset(Dataset):
         if idx > sum(slcs_dnmcs_product):
             raise IndexError(f"Index does not exist, maximum index: {int(sum(slcs_dnmcs_product))-1}")
         
-        cumsum_index = (slcs_dnmcs_product_cumsum <= idx).nonzero(as_tuple=True)[0]
+        cumsum_index = (slcs_dnmcs_product_cumsum > idx).nonzero(as_tuple=True)[0]
         if cumsum_index.numel() > 0:
-            slc_index = cumsum_index[-1]
+            file_index = cumsum_index[-1]
         else:
-            slc_index = 0
-        self.slcs_dnmcs[slc_index]
-        h5_file_to_load = self.h5_files[slc_index]
+            file_index = 0
+        self.slcs_dnmcs[file_index]
+        h5_file_to_load = self.h5_files[file_index]
         f = h5py.File(h5_file_to_load, "r")
         k_data = torch.tensor(f["kspace"])
         
         available_indices = k_data.shape[0]*k_data.shape[2]
+        slcs_dnmcs_product_cumsum_index = slcs_dnmcs_product_cumsum[0:file_index]
+        if slcs_dnmcs_product_cumsum_index.numel() > 0:
+            slcs_dnmcs_available = idx - slcs_dnmcs_product_cumsum[0:file_index][-1]
+        else:
+            slcs_dnmcs_available = idx
+        
         data_slice_index = 0
         data_dynamics_index = 0
-        if slc_index > k_data.shape[0]:
-            data_slice_index = slc_index // k_data.shape[0]
-            data_dynamics_index = slc_index - data_slice_index
+        if slcs_dnmcs_available > k_data.shape[0]:
+            data_dynamics_index = (slcs_dnmcs_available // k_data.shape[0])-1
+            if data_slice_index > k_data.shape[0]:
+                data_dynamics_index = data_dynamics_index-k_data.shape[2]
+                data_slice_index += 1
+            #data_slice_index = slc_index - data_slice_index
 
-        coilwise = torch.fft.ifft2(k_data[data_slice_index,:,data_dynamics_index,...])
+        coilwise = torch.fft.ifft2(k_data[int(data_slice_index),:,int(data_dynamics_index),...])
             
         self.fourier_op = self._create_fourier_operator(x_dim=coilwise.shape[-1],
                                                    y_dim=coilwise.shape[-2])
@@ -129,14 +140,18 @@ class CMRxReconDataset(Dataset):
 #%%
 #def main():
 dataset = CMRxReconDataset()
-data = dataset[34]
-#k_data = dataloader._load_data()
+# data = dataset[36]
+# #%%
+# for i in range(50):
+#     print(i, dataset[i].shape)
+#dataset[0]
+# k_data = dataloader._load_data()
 # %%
-dataloader = DataLoader(dataset, batch_size=4,
-                        shuffle=True, num_workers=0,
-                        collate_fn=lambda sampled: torch.concat(sampled, dim=0))
-# %%
-for i_batch, sample_batched in enumerate(dataloader):
-    print(i_batch, sample_batched.shape)
+# dataloader = DataLoader(dataset, batch_size=5,
+#                         shuffle=True, num_workers=0,
+#                         collate_fn=lambda sampled: torch.concat(sampled, dim=0))
+# # %%
+# for i_batch, sample_batched in enumerate(dataloader):
+#     print(i_batch, sample_batched.shape)
     
 # %%
