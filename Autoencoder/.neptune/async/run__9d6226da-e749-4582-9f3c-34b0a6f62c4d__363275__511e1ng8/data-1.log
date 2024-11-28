@@ -1,0 +1,13 @@
+{"obj": {"type": "AssignString", "path": ["sys", "description"], "value": ""}, "version": 1, "at": 1730448842.4680688}
+{"obj": {"type": "AssignString", "path": ["monitoring", "dfe38666", "hostname"], "value": "e81158"}, "version": 2, "at": 1730448842.469731}
+{"obj": {"type": "AssignString", "path": ["sys", "hostname"], "value": "e81158"}, "version": 3, "at": 1730448842.4706852}
+{"obj": {"type": "AssignString", "path": ["monitoring", "dfe38666", "pid"], "value": "363275"}, "version": 4, "at": 1730448842.4714162}
+{"obj": {"type": "AssignString", "path": ["monitoring", "dfe38666", "tid"], "value": "140597818107712"}, "version": 5, "at": 1730448842.472103}
+{"obj": {"type": "AssignBool", "path": ["sys", "failed"], "value": false}, "version": 6, "at": 1730448842.4728303}
+{"obj": {"type": "UploadFileSet", "path": ["source_code", "files"], "file_globs": ["/echo/hammac01/RadialMamba/Autoencoder/**/**/*.py"], "reset": "False"}, "version": 7, "at": 1730448842.4738555}
+{"obj": {"type": "UploadFile", "path": ["source_code", "diff"], "ext": "patch", "file_path": null, "tmp_file_name": "source_code_diff-1730448842.609496-2024-11-01_09.14.02.609496.patch", "clean_after_upload": false}, "version": 8, "at": 1730448842.6111917}
+{"obj": {"type": "UploadFile", "path": ["source_code", "upstream_diff_6d179a121c9301251e0e1e4d832174de490855b6"], "ext": "patch", "file_path": null, "tmp_file_name": "source_code_upstream_diff_6d179a121c9301251e0e1e4d832174de490855b6-1730448842.611823-2024-11-01_09.14.02.611823.patch", "clean_after_upload": false}, "version": 9, "at": 1730448842.6131017}
+{"obj": {"type": "AssignFloat", "path": ["parameters", "learning_rate"], "value": 0.001}, "version": 10, "at": 1730448842.8200557}
+{"obj": {"type": "AssignString", "path": ["parameters", "optimizer"], "value": "Adam"}, "version": 11, "at": 1730448842.8212218}
+{"obj": {"type": "LogFloats", "path": ["train", "batch", "loss"], "values": [{"value": 1.2470972044026053e+19, "step": null, "ts": 1730448848.8098207}]}, "version": 12, "at": 1730448848.8099637}
+{"obj": {"type": "LogFloats", "path": ["train", "batch", "loss"], "values": [{"value": 1.0697674811392293e+25, "step": null, "ts": 1730448854.1280763}]}, "version": 13, "at": 1730448854.1281753}

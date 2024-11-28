@@ -48,7 +48,7 @@ class CMRxReconDataset(Dataset):
         self.slcs_dnmcs_cumsum = torch.cumsum(self.slcs_dnmcs, dim=0)
         
     def _load_data(self):
-        h5_files = [file for file in Path(self.root_dir).rglob("*.h5")]
+        h5_files = [file for file in Path(self.root_dir).rglob("*sax*.h5")]
         slcs_dnmcs = torch.zeros((len(h5_files),2))
         
         counter = 0
@@ -59,10 +59,9 @@ class CMRxReconDataset(Dataset):
             slcs_dnmcs[h5_files.index(file)] = torch.tensor([int(str(file).split(".h5")[0].split("_")[-1]), int(str(file).split(".h5")[0].split("_")[-2])])
 
             counter += 1
-            print(counter)
-            if counter == 50:
-                break
-        
+            #if counter == 50:
+            #    break
+        print(f"Loaded {len(h5_files)} files.")
         slcs_dnmcs = slcs_dnmcs[slcs_dnmcs.sum(dim=1) != 0]
         return h5_files, slcs_dnmcs
     
@@ -80,7 +79,7 @@ class CMRxReconDataset(Dataset):
     def _create_fourier_operator(self, x_dim, y_dim):
         #### Create Radial KTrajectory and Fourier Operator
         random_initial_angle = random.randint(0,360)
-        radial_ktraj = self._radial_trajectory(n_spokes=64, initial_angle=random_initial_angle)
+        radial_ktraj = self._radial_trajectory(n_spokes=128, initial_angle=random_initial_angle)
         fourier_op = FourierOp(recon_matrix=SpatialDimension(z=1, y=y_dim, x=x_dim),
                             encoding_matrix=SpatialDimension(z=1, y=y_dim, x=x_dim),
                             traj=radial_ktraj)
@@ -130,6 +129,8 @@ class CMRxReconDataset(Dataset):
         self.fourier_op = self._create_fourier_operator(x_dim=coilwise.shape[-1],
                                                    y_dim=coilwise.shape[-2])
         (us_rad_kdata,) = self.fourier_op.forward(coilwise.unsqueeze(0).unsqueeze(2))
+        us_rad_kdata = torch.fft.fftshift(us_rad_kdata,dim=-1)/torch.fft.ifft(us_rad_kdata, dim=-1)/torch.fft.fftshift(us_rad_kdata,dim=-1)
+        
         (us_rad_image_data,) = self.fourier_op.H(us_rad_kdata)
         us_rad_kdata = torch.view_as_real(us_rad_kdata)
         us_rad_kdata = rearrange(us_rad_kdata.squeeze(0).squeeze(1), "c s k0 r -> s (c r) k0")
@@ -139,8 +140,8 @@ class CMRxReconDataset(Dataset):
     
 #%%
 #def main():
-dataset = CMRxReconDataset()
-# data = dataset[36]
+dataset = CMRxReconDataset(root_dir="/echo/hammac01/RadialMamba/Data/Cine")
+data = dataset[36]
 # #%%
 # for i in range(50):
 #     print(i, dataset[i].shape)
