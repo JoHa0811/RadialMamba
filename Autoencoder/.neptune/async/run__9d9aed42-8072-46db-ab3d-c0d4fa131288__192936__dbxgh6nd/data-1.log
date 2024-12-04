@@ -1,0 +1,8 @@
+{"obj": {"type": "AssignString", "path": ["sys", "description"], "value": ""}, "version": 1, "at": 1732887310.913492}
+{"obj": {"type": "AssignString", "path": ["monitoring", "0d4cad09", "hostname"], "value": "e81470"}, "version": 2, "at": 1732887310.914581}
+{"obj": {"type": "AssignString", "path": ["sys", "hostname"], "value": "e81470"}, "version": 3, "at": 1732887310.9153025}
+{"obj": {"type": "AssignString", "path": ["monitoring", "0d4cad09", "pid"], "value": "192936"}, "version": 4, "at": 1732887310.9159296}
+{"obj": {"type": "AssignString", "path": ["monitoring", "0d4cad09", "tid"], "value": "140227771623232"}, "version": 5, "at": 1732887310.9163105}
+{"obj": {"type": "AssignBool", "path": ["sys", "failed"], "value": false}, "version": 6, "at": 1732887310.9166312}
+{"obj": {"type": "UploadFileSet", "path": ["source_code", "files"], "file_globs": ["/echo/hammac01/RadialMamba/Autoencoder/**/*.py"], "reset": "False"}, "version": 7, "at": 1732887310.9171925}
+{"obj": {"type": "UploadFile", "path": ["source_code", "diff"], "ext": "patch", "file_path": null, "tmp_file_name": "source_code_diff-1732887310.931145-2024-11-29_14.35.10.931145.patch", "clean_after_upload": false}, "version": 8, "at": 1732887310.9319413}

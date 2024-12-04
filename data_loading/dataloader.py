@@ -23,6 +23,7 @@ from torchvision import transforms, utils
 from pathlib import Path
 from mrpro.operators.FourierOp import FourierOp
 from mrpro.data import SpatialDimension
+from mrpro.data.DcfData import DcfData
 from mrpro.data import KData
 from mrpro.data import KTrajectory
 from einops import rearrange
@@ -43,7 +44,8 @@ class CMRxReconDataset(Dataset):
             transform (callable, optional): Optional transform to be applied on a sample.
         """
         self.root_dir = root_dir
-        self.transform = transform
+        self.transform = transforms.Compose([
+            transforms.Normalize((0.5), (0.5))])
         self.h5_files, self.slcs_dnmcs = self._load_data()
         self.slcs_dnmcs_cumsum = torch.cumsum(self.slcs_dnmcs, dim=0)
         
@@ -53,14 +55,10 @@ class CMRxReconDataset(Dataset):
         
         counter = 0
         for file in h5_files:
-            f = h5py.File(file, "r")
-            #k_data = torch.tensor(f["kspace"])
             #slcs_dnmcs[h5_files.index(file)] = torch.tensor([torch.tensor(f["kspace"]).shape[0], torch.tensor(f["kspace"]).shape[2]])
             slcs_dnmcs[h5_files.index(file)] = torch.tensor([int(str(file).split(".h5")[0].split("_")[-1]), int(str(file).split(".h5")[0].split("_")[-2])])
-
             counter += 1
-            #if counter == 50:
-            #    break
+
         print(f"Loaded {len(h5_files)} files.")
         slcs_dnmcs = slcs_dnmcs[slcs_dnmcs.sum(dim=1) != 0]
         return h5_files, slcs_dnmcs
@@ -75,6 +73,10 @@ class CMRxReconDataset(Dataset):
             ky = radial * torch.sin(angle)
             kz = torch.zeros(1, 1, 1, 1)
             return KTrajectory(kz, ky, kx)
+        
+    def _create_dcf(self, n_spokes=128, n_k0=256, initial_angle=random.randint(0,360), batch_size=1):
+        dcf = DcfData.from_traj_voronoi(self._radial_trajectory(n_spokes, n_k0, initial_angle))
+        return dcf
         
     def _create_fourier_operator(self, x_dim, y_dim):
         #### Create Radial KTrajectory and Fourier Operator
@@ -106,9 +108,9 @@ class CMRxReconDataset(Dataset):
         self.slcs_dnmcs[file_index]
         h5_file_to_load = self.h5_files[file_index]
         f = h5py.File(h5_file_to_load, "r")
-        k_data = torch.tensor(f["kspace"])
         
-        available_indices = k_data.shape[0]*k_data.shape[2]
+        
+        available_indices = f["kspace"].shape[0]*f["kspace"].shape[2]
         slcs_dnmcs_product_cumsum_index = slcs_dnmcs_product_cumsum[0:file_index]
         if slcs_dnmcs_product_cumsum_index.numel() > 0:
             slcs_dnmcs_available = idx - slcs_dnmcs_product_cumsum[0:file_index][-1]
@@ -117,26 +119,37 @@ class CMRxReconDataset(Dataset):
         
         data_slice_index = 0
         data_dynamics_index = 0
-        if slcs_dnmcs_available > k_data.shape[0]:
-            data_dynamics_index = (slcs_dnmcs_available // k_data.shape[0])-1
-            if data_slice_index > k_data.shape[0]:
-                data_dynamics_index = data_dynamics_index-k_data.shape[2]
+        if slcs_dnmcs_available > f["kspace"].shape[0]:
+            data_dynamics_index = (slcs_dnmcs_available // f["kspace"].shape[0])-1
+            if data_slice_index > f["kspace"].shape[0]:
+                data_dynamics_index = data_dynamics_index-f["kspace"].shape[2]
                 data_slice_index += 1
             #data_slice_index = slc_index - data_slice_index
-
-        coilwise = torch.fft.ifft2(k_data[int(data_slice_index),:,int(data_dynamics_index),...])
-            
+        
+        k_data = torch.tensor(f["kspace"][int(data_slice_index),:,int(data_dynamics_index),...])
+        f.close()
+        coilwise = torch.fft.ifft2(k_data)
+        
+        #old_threads=torch.get_num_threads()
+        #torch.set_num_threads(1)
         self.fourier_op = self._create_fourier_operator(x_dim=coilwise.shape[-1],
                                                    y_dim=coilwise.shape[-2])
         (us_rad_kdata,) = self.fourier_op.forward(coilwise.unsqueeze(0).unsqueeze(2))
-        #us_rad_kdata = torch.fft.fftshift(us_rad_kdata,dim=-1)/torch.fft.ifft(us_rad_kdata, dim=-1)/torch.fft.fftshift(us_rad_kdata,dim=-1)
         
-        (us_rad_image_data,) = self.fourier_op.H(us_rad_kdata)
+        us_rad_kdata = torch.fft.fftshift(us_rad_kdata,dim=-1)
+        us_rad_kdata = torch.fft.ifft(us_rad_kdata, dim=-1)
+        us_rad_kdata = torch.fft.fftshift(us_rad_kdata,dim=-1)
+        
+        #torch.set_num_threads(old_threads)
+        
+        #(us_rad_image_data,) = self.fourier_op.H(us_rad_kdata)
         us_rad_kdata = torch.view_as_real(us_rad_kdata)
         us_rad_kdata = rearrange(us_rad_kdata.squeeze(0).squeeze(1), "c s k0 r -> s (c r) k0")
         
+        #us_rad_kdata -= us_rad_kdata.min(1, keepdim=True)[0]
+        #us_rad_kdata /= us_rad_kdata.max(1, keepdim=True)[0]
         
-        return us_rad_kdata#, coilwise
+        return us_rad_kdata / 2.0e-06#, coilwise
     
 #%%
 #def main():
